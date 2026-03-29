@@ -335,11 +335,45 @@ with col2:
     )
     fig_heatmap.update_layout(height=400)
     st.plotly_chart(fig_heatmap, use_container_width=True)
-
 # ========================================
 # REAL-TIME ANIMATION SECTION
 # ========================================
-st.markdown('<h2 style="color: white;">🎞️ Real-time Climate Simulator</h2>', unsafe_allow_html=True)
+# -------------------------------
+# REALTIME CLIMATE SIMULATOR FIX
+# -------------------------------
+
+st.subheader("🎞️ Animated Climate Change")
+
+year_data = filtered_df[filtered_df['Year'] == year].copy()
+
+# Data cleaning
+year_data['Date'] = pd.to_datetime(year_data['Date'], errors='coerce')
+year_data['Month'] = year_data['Date'].dt.month
+year_data['Month_str'] = year_data['Month'].astype(str)
+
+year_data['Temp'] = pd.to_numeric(year_data['Temp'], errors='coerce')
+year_data['Climate_Risk'] = pd.to_numeric(year_data['Climate_Risk'], errors='coerce')
+
+year_data = year_data.dropna(subset=['Date', 'Temp', 'Climate_Risk', 'Month_str'])
+
+# Fix size issue
+year_data['Climate_Risk'] = np.clip(year_data['Climate_Risk'], 1, 100)
+
+if year_data.empty:
+    st.error("No valid data available")
+else:
+    fig = px.scatter(
+        year_data.tail(24),
+        x='Date',
+        y='Temp',
+        animation_frame='Month_str',
+        size='Climate_Risk',
+        color='Climate_Risk',
+        range_color=[0, 100],
+        title=f"Climate Evolution: {year}"
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
 
 # Simulation controls
 col1, col2, col3 = st.columns(3)
