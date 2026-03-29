@@ -2,7 +2,8 @@ streamlit
 pandas
 numpy
 plotly
-requests
-reportlab
 scikit-learn
-statsmodels
+reportlab
+openpyxl
+requests
+xlsxwriter
