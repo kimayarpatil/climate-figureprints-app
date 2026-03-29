@@ -371,14 +371,99 @@ with tab6:
             Paragraph(f"Current Risk Score: {risk_score:.1f}/100", styles['Heading2'])
         ]
         
-        # Summary table
+            # Summary table (continued)
         table_data = [
             ["Metric", "Value", "Status"],
             ["Avg Temp", f"{filtered_df['Temp'].mean():.2f}°C", "📈 Rising"],
             ["CO2 Level", f"{filtered_df['CO2_ppm'].iloc[-1]:.0f} ppm", "⚠️ Critical"],
             ["Risk Score", f"{risk_score:.1f}", "🚨 High"],
-            ["Extreme Events", f"{len(extremes)}", "🌪️ Increasing"]
+            ["Extreme Events", f"{len(extremes)}", "🌪️ Increasing"],
+            [f"{scenario} Projection", f"{predictions.get(scenario, 0):.2f}°C", "🔮 Forecast"]
         ]
         
-        from reportlab.platypus import TableStyle
-        table = Table(table
+        table = Table(table_data)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.darkblue),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,0), (-1,0), 12),
+            ('BOTTOMPADDING', (0,0), (-1,0), 12),
+            ('BACKGROUND', (0,1), (-1,-1), colors.lightgrey),
+            ('GRID', (0,0), (-1,-1), 1, colors.black),
+            ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.lightgrey])
+        ]))
+        
+        story.append(table)
+        story.append(Spacer(1, 20))
+        story.append(Paragraph("Recommendations:", styles['Heading2']))
+        story.append(Paragraph("""
+        1. Accelerate renewable energy transition<br/>
+        2. Implement carbon capture technologies<br/>
+        3. Strengthen climate adaptation measures<br/>
+        4. Reduce deforestation immediately
+        """, styles['Normal']))
+        
+        doc.build(story)
+        buffer.seek(0)
+        pdf_bytes = buffer.getvalue()
+        
+        st.download_button(
+            label="📥 Download PDF Report",
+            data=pdf_bytes,
+            file_name=f"climate_report_{datetime.now().strftime('%Y%m%d')}.pdf",
+            mime="application/pdf"
+        )
+        
+        # Excel export
+        excel_buffer = io.BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+            filtered_df.to_excel(writer, sheet_name='Climate_Data', index=False)
+            pd.DataFrame(predictions.items(), columns=['Scenario', 'Temperature']).to_excel(writer, sheet_name='Predictions', index=False)
+            corr_data.to_excel(writer, sheet_name='Correlations')
+        excel_bytes = excel_buffer.getvalue()
+        
+        st.download_button(
+            label="📊 Download Excel Data",
+            data=excel_bytes,
+            file_name=f"climate_data_{datetime.now().strftime('%Y%m%d')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+# ---------------- SIDEBAR CONTROLS ----------------
+st.sidebar.markdown("---")
+st.sidebar.subheader("🎯 Quick Actions")
+
+if st.sidebar.button("🔄 Refresh Data"):
+    st.cache_data.clear()
+    st.rerun()
+
+if st.sidebar.button("🗺️ Full Screen Map"):
+    st.switch_page("pages/map.py")  # For multi-page apps
+
+# Real-time news (simulated)
+if st.sidebar.button("📰 Climate News"):
+    with st.spinner("Fetching latest climate news..."):
+        news = [
+            "🌡️ 2024 hottest year on record - NASA",
+            "⚠️ CO2 hits 420ppm - Mauna Loa Observatory", 
+            "🌊 Sea levels rising 3.7mm/year - NOAA",
+            "🔥 15% increase in extreme heat events"
+        ]
+        for item in news:
+            st.sidebar.info(item)
+
+# ---------------- FOOTER ----------------
+st.markdown("---")
+st.markdown("""
+<div style='text-align: center; color: #666;'>
+    <h3>🌍 Ultimate Climate Intelligence Platform</h3>
+    <p>Powered by AI/ML | Real-time Data | IPCC RCP Scenarios | Professional Analytics</p>
+    <p>📊 Data Sources: NASA GISS, NOAA, IPCC | 🔬 Built with Streamlit + Plotly</p>
+    <p>⚠️ For research/educational use | Not financial advice</p>
+</div>
+""", unsafe_allow_html=True)
+
+# Auto-refresh for demo
+if st.button("🔄 Live Update (30s)"):
+    st.rerun()
